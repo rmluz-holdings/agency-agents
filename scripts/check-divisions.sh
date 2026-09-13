@@ -30,7 +30,7 @@ JSON="divisions.json"
 # runbooks (no agent frontmatter), not agents. Neither is a division — they must
 # never be scanned as source-agent categories. affiliate-marketing-hub/ is a
 # standalone Next.js application (see its README), not an agent category.
-NON_DIVISION_DIRS=(examples scripts integrations strategy affiliate-marketing-hub)
+NON_DIVISION_DIRS=(examples scripts integrations strategy affiliate-marketing-hub control-deck)
 
 errors=0
 fail() { echo "ERROR $*"; errors=$((errors + 1)); }

@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Control Deck</title>
+<style>
+  :root {
+    --bg: #0b0f14; --panel: #121821; --panel-2: #0f141b; --line: #1f2937; --text: #e5e7eb; --muted: #8b95a5;
+    --up: #22c55e; --down: #ef4444; --unknown: #f59e0b; --accent: #60a5fa; --accent-2: #a78bfa;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.45 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; padding: 16px; }
+  header { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  h1 { font-size: 18px; margin: 0; letter-spacing: .02em; }
+  h1 span { color: var(--muted); font-weight: 400; font-size: 12px; margin-left: 8px; }
+  .cmd { display: flex; gap: 8px; flex: 1 1 420px; max-width: 720px; }
+  .cmd input { flex: 1; background: var(--panel); border: 1px solid var(--line); color: var(--text); padding: 9px 12px; border-radius: 8px; font-family: var(--mono); font-size: 13px; }
+  .cmd button, .actions button, .jobs button { background: var(--panel-2); border: 1px solid var(--line); color: var(--text); padding: 7px 11px; border-radius: 7px; cursor: pointer; font-size: 12px; }
+  .cmd button:hover, .actions button:hover, .jobs button:hover { border-color: var(--accent); }
+  .host { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 14px; }
+  .metric { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+  .metric .k { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; }
+  .metric .v { font-family: var(--mono); font-size: 16px; margin-top: 2px; font-variant-numeric: tabular-nums; }
+  .bar { height: 5px; background: #1f2937; border-radius: 3px; margin-top: 6px; overflow: hidden; }
+  .bar i { display: block; height: 100%; background: var(--accent); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  .card .top { display: flex; align-items: center; gap: 8px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--unknown); flex: none; box-shadow: 0 0 0 3px rgba(255,255,255,.04); }
+  .dot.up { background: var(--up); } .dot.down { background: var(--down); }
+  .card .name { font-weight: 600; }
+  .card .kind { color: var(--muted); font-size: 11px; margin-left: auto; text-transform: uppercase; letter-spacing: .06em; }
+  .card .cwd { color: var(--muted); font-family: var(--mono); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .card .cwd.missing { color: var(--down); }
+  .card pre { margin: 0; background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font-family: var(--mono); font-size: 11.5px; max-height: 150px; overflow: auto; white-space: pre-wrap; word-break: break-word; color: #cbd5e1; }
+  .actions { display: flex; flex-wrap: wrap; gap: 6px; }
+  .actions button.medium { border-color: #7c5a12; } .actions button.high { border-color: #7f1d1d; }
+  .links a { color: var(--accent); font-size: 12px; margin-right: 10px; text-decoration: none; }
+  .note { color: var(--muted); font-size: 11.5px; }
+  .jobs { margin-top: 16px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+  .jobs h2 { font-size: 13px; margin: 0 0 8px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 500; }
+  td.st { font-family: var(--mono); }
+  .st.running, .st.detached { color: var(--accent); } .st.finished { color: var(--up); } .st.failed, .st.timeout, .st.stopped { color: var(--down); }
+  #drawer { position: fixed; right: 0; top: 0; bottom: 0; width: min(720px, 100vw); background: var(--panel); border-left: 1px solid var(--line); padding: 14px; overflow: auto; transform: translateX(105%); transition: transform .18s ease; z-index: 10; }
+  #drawer.open { transform: none; }
+  #drawer pre { font-size: 11.5px; max-height: none; }
+  #toast { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); background: #1e293b; border: 1px solid var(--line); padding: 8px 14px; border-radius: 8px; font-size: 12.5px; opacity: 0; transition: opacity .2s; pointer-events: none; }
+  #toast.show { opacity: 1; }
+  .procs { font-family: var(--mono); font-size: 11.5px; color: #cbd5e1; }
+  .procs div { display: grid; grid-template-columns: 60px 56px 56px 1fr; gap: 6px; }
+  .procs .h { color: var(--muted); }
+  @media (max-width: 700px) { body { padding: 12px; } .grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <h1 id="title">Control Deck <span id="clock"></span></h1>
+  <form class="cmd" id="cmdForm" autocomplete="off">
+    <input id="cmdInput" placeholder="command: <system> <action>   e.g.  auto-company cycles" list="cmdList">
+    <datalist id="cmdList"></datalist>
+    <button type="submit">Run</button>
+    <button type="button" id="tokenBtn" title="Set the action token printed by deck.py">Token</button>
+  </form>
+</header>
+
+<section class="host" id="host"></section>
+<section class="grid" id="grid"></section>
+
+<section class="jobs">
+  <h2>Jobs</h2>
+  <table><thead><tr><th>Started</th><th>System</th><th>Action</th><th>Status</th><th>PID</th><th></th></tr></thead><tbody id="jobs"></tbody></table>
+</section>
+
+<aside id="drawer">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+    <strong id="drawerTitle">Log</strong>
+    <button onclick="closeDrawer()" style="background:none;border:1px solid var(--line);color:var(--text);border-radius:6px;padding:4px 8px;cursor:pointer">close</button>
+  </div>
+  <pre id="drawerBody"></pre>
+</aside>
+<div id="toast"></div>
+
+<script>
+const $ = (s) => document.querySelector(s);
+let CONFIG = null, STATUS = {}, drawerRefresh = null;
+const fmtBytes = (n) => { const u = ['B','KB','MB','GB','TB']; let i = 0; while (n >= 1024 && i < u.length-1) { n /= 1024; i++; } return n.toFixed(i ? 1 : 0) + ' ' + u[i]; };
+const fmtDur = (s) => { const d = Math.floor(s/86400), h = Math.floor(s%86400/3600), m = Math.floor(s%3600/60); return (d ? d+'d ' : '') + h+'h '+m+'m'; };
+const token = () => { try { return localStorage.getItem('deckToken') || ''; } catch (e) { return ''; } };
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2600); }
+async function api(path, opts = {}) {
+  const headers = Object.assign({ 'Content-Type': 'application/json' }, opts.headers || {});
+  if (opts.method === 'POST') headers['X-Deck-Token'] = token();
+  const r = await fetch(path, Object.assign({}, opts, { headers }));
+  const data = await r.json().catch(() => ({}));
+  return { ok: r.ok, status: r.status, data };
+}
+$('#tokenBtn').onclick = () => { const v = prompt('Action token (printed when deck.py starts):', token()); if (v !== null) { try { localStorage.setItem('deckToken', v.trim()); } catch (e) {} toast('token saved'); } };
+
+async function loadConfig() {
+  const { data } = await api('/api/config');
+  CONFIG = data; document.title = data.title; $('#title').firstChild.textContent = data.title + ' ';
+  const dl = $('#cmdList'); dl.innerHTML = '';
+  data.systems.forEach(s => s.actions.forEach(a => { const o = document.createElement('option'); o.value = `${s.id} ${a.name}`; dl.appendChild(o); }));
+  renderGrid();
+}
+function renderGrid() {
+  const g = $('#grid'); g.innerHTML = '';
+  CONFIG.systems.forEach(s => {
+    const st = STATUS[s.id] || {}; const health = st.health?.state || 'unknown';
+    const card = document.createElement('div'); card.className = 'card'; card.id = 'card-' + s.id;
+    const links = Object.entries(s.links || {}).map(([k, v]) => `<a href="${v}" target="_blank" rel="noopener">${k} ↗</a>`).join('');
+    card.innerHTML = `
+      <div class="top"><span class="dot ${health}"></span><span class="name">${s.name}</span><span class="kind">${s.kind}</span></div>
+      <div class="cwd ${s.cwd_exists ? '' : 'missing'}" title="${s.cwd}">${s.cwd}${s.cwd_exists ? '' : '  (missing)'}</div>
+      <pre class="status">${escapeHtml(st.status?.detail || 'probing…')}</pre>
+      <div class="actions">${s.actions.map(a => `<button class="${a.risk}" data-sys="${s.id}" data-act="${a.name}" title="risk: ${a.risk}${a.detach ? ', runs detached' : ''}">${a.name}</button>`).join('')}${s.has_log ? `<button data-log="${s.id}">log</button>` : ''}</div>
+      <div class="links">${links}</div>
+      ${s.note ? `<div class="note">${escapeHtml(s.note)}</div>` : ''}`;
+    g.appendChild(card);
+  });
+  g.querySelectorAll('button[data-act]').forEach(b => b.onclick = () => runAction(b.dataset.sys, b.dataset.act));
+  g.querySelectorAll('button[data-log]').forEach(b => b.onclick = () => openLog(`/api/systems/${b.dataset.log}/log?lines=300`, b.dataset.log + ' log'));
+}
+function escapeHtml(s) { return String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c])); }
+async function refreshStatus() {
+  const { data } = await api('/api/status'); STATUS = data;
+  CONFIG.systems.forEach(s => {
+    const card = $('#card-' + s.id); if (!card) return; const st = STATUS[s.id] || {};
+    card.querySelector('.dot').className = 'dot ' + (st.health?.state || 'unknown');
+    card.querySelector('.status').textContent = st.status?.detail || 'no status';
+  });
+}
+async function refreshHost() {
+  const { data: h } = await api('/api/host');
+  const memPct = h.memory.total ? h.memory.used / h.memory.total * 100 : 0;
+  const diskPct = h.disk.total ? h.disk.used / h.disk.total * 100 : 0;
+  const loadPct = h.cpus ? Math.min(h.load[0] / h.cpus * 100, 100) : 0;
+  $('#host').innerHTML = `
+    <div class="metric"><div class="k">host</div><div class="v">${h.hostname}</div><div class="note">${h.platform} · ${h.cpus} cpu</div></div>
+    <div class="metric"><div class="k">load 1/5/15</div><div class="v">${h.load.map(x => x.toFixed(2)).join(' / ')}</div><div class="bar"><i style="width:${loadPct}%"></i></div></div>
+    <div class="metric"><div class="k">memory</div><div class="v">${fmtBytes(h.memory.used)} / ${fmtBytes(h.memory.total)}</div><div class="bar"><i style="width:${memPct}%"></i></div></div>
+    <div class="metric"><div class="k">disk /</div><div class="v">${fmtBytes(h.disk.used)} / ${fmtBytes(h.disk.total)}</div><div class="bar"><i style="width:${diskPct}%"></i></div></div>
+    <div class="metric"><div class="k">uptime</div><div class="v">${fmtDur(h.uptime_seconds)}</div><div class="note">${h.ports.length} listening ports</div></div>
+    <div class="metric" style="grid-column: span 2"><div class="k">top processes</div><div class="procs"><div class="h"><span>pid</span><span>cpu%</span><span>mem%</span><span>command</span></div>${h.processes.map(p => `<div><span>${p.pid}</span><span>${p.cpu}</span><span>${p.mem}</span><span>${escapeHtml(p.command)}</span></div>`).join('')}</div></div>`;
+  $('#clock').textContent = h.time;
+}
+async function refreshJobs() {
+  const { data } = await api('/api/jobs');
+  $('#jobs').innerHTML = data.map(j => `<tr><td>${new Date(j.started*1000).toLocaleTimeString()}</td><td>${j.system}</td><td>${j.action}</td><td class="st ${j.status}">${j.status}${j.exit_code !== null && j.exit_code !== undefined ? ' ('+j.exit_code+')' : ''}</td><td>${j.pid ?? ''}</td><td><button data-jlog="${j.id}">output</button> ${(j.status === 'running' || j.status === 'detached') ? `<button data-jstop="${j.id}">stop</button>` : ''}</td></tr>`).join('') || '<tr><td colspan="6" class="note">no jobs yet</td></tr>';
+  $('#jobs').querySelectorAll('button[data-jlog]').forEach(b => b.onclick = () => openLog(`/api/jobs/${b.dataset.jlog}/log?lines=400`, 'job ' + b.dataset.jlog));
+  $('#jobs').querySelectorAll('button[data-jstop]').forEach(b => b.onclick = async () => { const r = await api(`/api/jobs/${b.dataset.jstop}/stop`, { method: 'POST', body: '{}' }); toast(r.ok ? 'stop sent' : (r.data.error || 'failed')); refreshJobs(); });
+}
+async function runAction(sys, act, confirm = false) {
+  const r = await api(`/api/systems/${sys}/action/${act}`, { method: 'POST', body: JSON.stringify({ confirm }) });
+  if (r.status === 409 && r.data.needs_confirm) {
+    if (window.confirm(`${sys} ${act} is ${r.data.risk} risk and will run:\n\n${r.data.cmd}\n\nProceed?`)) return runAction(sys, act, true);
+    return;
+  }
+  if (r.status === 401) { toast('set the action token first'); $('#tokenBtn').click(); return; }
+  toast(r.ok ? `started ${sys} ${act}` : (r.data.error || 'failed'));
+  if (r.ok) { setTimeout(() => { refreshJobs(); openLog(`/api/jobs/${r.data.id}/log?lines=400`, `${sys} ${act}`); }, 600); }
+}
+$('#cmdForm').onsubmit = (e) => { e.preventDefault(); const p = $('#cmdInput').value.trim().split(/\s+/); if (p.length === 2) runAction(p[0], p[1]); else toast('format: <system> <action>'); };
+async function openLog(url, title) {
+  $('#drawerTitle').textContent = title; $('#drawer').classList.add('open');
+  const load = async () => { const { data } = await api(url); $('#drawerBody').textContent = data.log || data.error || ''; };
+  await load(); clearInterval(drawerRefresh); drawerRefresh = setInterval(load, 3000);
+}
+function closeDrawer() { $('#drawer').classList.remove('open'); clearInterval(drawerRefresh); }
+(async () => {
+  await loadConfig(); await Promise.all([refreshStatus(), refreshHost(), refreshJobs()]);
+  const every = (CONFIG.refresh_seconds || 5) * 1000;
+  setInterval(refreshStatus, every); setInterval(refreshHost, every); setInterval(refreshJobs, every);
+})();
+</script>
+</body>
+</html>

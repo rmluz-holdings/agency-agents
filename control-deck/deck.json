@@ -1,0 +1,250 @@
+{
+  "title": "Control Deck",
+  "bind": "127.0.0.1",
+  "port": 8900,
+  "refresh_seconds": 5,
+  "systems": [
+    {
+      "id": "auto-company",
+      "name": "Auto-Company",
+      "kind": "loop",
+      "cwd": "${DECK_ROOT}/maxmiksa/auto-company",
+      "status": {
+        "type": "command",
+        "cmd": "bash scripts/core/monitor.sh --status",
+        "timeout": 15
+      },
+      "health": {
+        "type": "file_exists",
+        "path": ".auto-loop.pid"
+      },
+      "links": {
+        "dashboard": "http://127.0.0.1:8788"
+      },
+      "note": "Starting the loop is a deliberate terminal action (make start). The deck only observes, pauses, and stops it.",
+      "actions": {
+        "stop": {
+          "cmd": "bash scripts/core/stop-loop.sh",
+          "risk": "low"
+        },
+        "request-stop-after-cycle": {
+          "cmd": "touch .auto-loop-stop && echo 'stop requested; loop exits before the next cycle'",
+          "risk": "low"
+        },
+        "last-cycle": {
+          "cmd": "bash scripts/core/monitor.sh --last",
+          "risk": "low"
+        },
+        "cycles": {
+          "cmd": "bash scripts/core/monitor.sh --cycles",
+          "risk": "low"
+        },
+        "usage-today": {
+          "cmd": "python3 scripts/core/usage.py summary --period day",
+          "risk": "low"
+        },
+        "consensus": {
+          "cmd": "cat memories/consensus.md",
+          "risk": "low"
+        },
+        "dashboard": {
+          "cmd": "python3 dashboard/server.py --port 8788",
+          "detach": true,
+          "risk": "low"
+        }
+      },
+      "log": "logs/auto-loop.log"
+    },
+    {
+      "id": "godmode",
+      "name": "CC GodMode",
+      "kind": "toolkit",
+      "cwd": "${HOME}/.claude",
+      "status": {
+        "type": "command",
+        "cmd": "bash -c 'echo agents=$(ls agents 2>/dev/null | wc -l) skills=$(ls skills 2>/dev/null | wc -l) scripts=$(ls scripts 2>/dev/null | wc -l)'",
+        "timeout": 5
+      },
+      "health": {
+        "type": "dir_exists",
+        "path": "agents"
+      },
+      "actions": {
+        "list-agents": {
+          "cmd": "ls agents",
+          "risk": "low"
+        },
+        "list-skills": {
+          "cmd": "ls skills",
+          "risk": "low"
+        }
+      }
+    },
+    {
+      "id": "solvent-agent",
+      "name": "solvent-agent",
+      "kind": "service",
+      "cwd": "${DECK_ROOT}/solvent-agent",
+      "status": {
+        "type": "http",
+        "url": "http://127.0.0.1:8787/health",
+        "timeout": 3
+      },
+      "health": {
+        "type": "http",
+        "url": "http://127.0.0.1:8787/health",
+        "timeout": 3
+      },
+      "links": {
+        "dashboard": "http://127.0.0.1:8787/"
+      },
+      "actions": {
+        "serve": {
+          "cmd": "python3 -m solvent serve",
+          "detach": true,
+          "risk": "medium"
+        },
+        "tests": {
+          "cmd": "python3 -m pytest -q",
+          "risk": "low",
+          "timeout": 600
+        }
+      },
+      "log": "logs/serve.log"
+    },
+    {
+      "id": "platform-core",
+      "name": "platform-core (RMLUZ)",
+      "kind": "service",
+      "cwd": "${DECK_ROOT}/platform-core",
+      "status": {
+        "type": "http",
+        "url": "http://127.0.0.1:8010/api/health",
+        "timeout": 3
+      },
+      "health": {
+        "type": "http",
+        "url": "http://127.0.0.1:8010/api/health",
+        "timeout": 3
+      },
+      "links": {
+        "dashboard": "http://127.0.0.1:8010/",
+        "repo": "https://github.com/RMLUZ-holdings/platform-core"
+      },
+      "actions": {
+        "serve": {
+          "cmd": "python3 -m uvicorn rmluz_kernel.api:create_app --factory --host 127.0.0.1 --port 8010",
+          "detach": true,
+          "risk": "medium",
+          "note": "Set RMLUZ_API_TOKEN in the environment before serving anything beyond localhost."
+        },
+        "tests": {
+          "cmd": "python3 -m pytest -q",
+          "risk": "low",
+          "timeout": 900
+        }
+      },
+      "log": "logs/serve.log"
+    },
+    {
+      "id": "plumoai",
+      "name": "PlumoAI stack",
+      "kind": "compose",
+      "cwd": "${DECK_ROOT}/plumoai/plumoai",
+      "status": {
+        "type": "command",
+        "cmd": "docker compose --env-file .env -f docker-compose.yml -f docker-compose.local.yml ps --format '{{.Name}} {{.State}}' 2>/dev/null | grep . || echo 'no containers running'",
+        "timeout": 20
+      },
+      "health": {
+        "type": "http",
+        "url": "http://127.0.0.1:7861/",
+        "timeout": 3
+      },
+      "links": {
+        "app": "http://localhost:7861"
+      },
+      "actions": {
+        "up": {
+          "cmd": "docker compose --env-file .env -f docker-compose.yml -f docker-compose.local.yml up -d",
+          "risk": "medium",
+          "timeout": 900
+        },
+        "down": {
+          "cmd": "docker compose --env-file .env -f docker-compose.yml -f docker-compose.local.yml down",
+          "risk": "medium",
+          "timeout": 300
+        },
+        "logs": {
+          "cmd": "docker compose --env-file .env -f docker-compose.yml -f docker-compose.local.yml logs --tail 100",
+          "risk": "low",
+          "timeout": 60
+        }
+      }
+    },
+    {
+      "id": "affiliate-hub",
+      "name": "Affiliate Marketing Hub",
+      "kind": "webapp",
+      "cwd": "${DECK_ROOT}/agency-agents/affiliate-marketing-hub",
+      "status": {
+        "type": "http",
+        "url": "http://127.0.0.1:3000/",
+        "timeout": 3
+      },
+      "health": {
+        "type": "http",
+        "url": "http://127.0.0.1:3000/",
+        "timeout": 3
+      },
+      "links": {
+        "app": "http://localhost:3000",
+        "admin": "http://localhost:3000/admin"
+      },
+      "actions": {
+        "dev": {
+          "cmd": "npm run dev",
+          "detach": true,
+          "risk": "low"
+        },
+        "build": {
+          "cmd": "npm run build",
+          "risk": "low",
+          "timeout": 900
+        },
+        "lint": {
+          "cmd": "npm run lint",
+          "risk": "low",
+          "timeout": 300
+        }
+      },
+      "log": "logs/dev.log"
+    },
+    {
+      "id": "docker",
+      "name": "Docker engine",
+      "kind": "runtime",
+      "cwd": "${DECK_ROOT}",
+      "status": {
+        "type": "command",
+        "cmd": "docker ps --format '{{.Names}} {{.Status}}'",
+        "timeout": 10
+      },
+      "health": {
+        "type": "command",
+        "cmd": "docker info",
+        "timeout": 10
+      },
+      "actions": {
+        "ps": {
+          "cmd": "docker ps -a",
+          "risk": "low"
+        },
+        "df": {
+          "cmd": "docker system df",
+          "risk": "low"
+        }
+      }
+    }
+  ]
+}
