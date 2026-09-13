@@ -98,7 +98,7 @@
       "links": {
         "docs": "https://docs.x.ai/build/overview"
       },
-      "note": "Sign in from a terminal with `grok login --device-auth` (needs access to auth.x.ai) or export XAI_API_KEY.",
+      "note": "Fable 5.1 is the default model via ~/.grok/config.toml; export ANTHROPIC_API_KEY, then use grok-fable. Sign in to xAI models with `grok login --device-code` or XAI_API_KEY.",
       "actions": {
         "version": {
           "cmd": "grok --version",
@@ -115,9 +115,14 @@
           "timeout": 1800
         },
         "rebuild-release": {
-          "cmd": "PROTOC=/usr/bin/protoc cargo build -p xai-grok-pager-bin --release && install -m 755 target/release/xai-grok-pager ~/.local/bin/grok",
+          "cmd": "PROTOC=/usr/bin/protoc GROK_TOOLS_BUNDLE_RG_PATH=$(command -v rg) GROK_SHELL_BUNDLE_RG_PATH=$(command -v rg) cargo build -p xai-grok-pager-bin --release && install -m 755 target/release/xai-grok-pager ~/.local/bin/grok",
           "risk": "medium",
           "timeout": 3600
+        },
+        "fable-hello": {
+          "cmd": "grok-fable -p 'Reply with one word: ready' --max-turns 1",
+          "risk": "low",
+          "timeout": 120
         }
       }
     },

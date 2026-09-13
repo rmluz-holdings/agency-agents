@@ -76,6 +76,20 @@ Same project. In Xcode choose Product → Archive, then Distribute App → TestF
 
 What cannot be done for you from a Linux sandbox: signing and uploading. Both need Xcode on macOS and your Apple credentials.
 
+## Grok Build with Claude Fable 5.1
+
+xAI's Grok Build CLI is registered as a deck system and configured to use Claude Fable 5.1 through the Anthropic Messages API. `~/.grok/config.toml` defines `[model.fable]` (`claude-fable-5-1`) and `[model.opus5]`, reads the key from `ANTHROPIC_API_KEY` at session start, and sets `fable` as the default model.
+
+```bash
+export ANTHROPIC_API_KEY=sk-ant-...
+grok-fable -p "hello"          # wrapper: satisfies Grok's sign-in gate, selects -m fable
+grok -m opus5 -p "hello"       # same, with Opus 5 (needs XAI_API_KEY=local-placeholder or a real sign-in)
+```
+
+Grok refuses to start without an xAI sign-in or `XAI_API_KEY` even when the model is a custom endpoint; the wrapper exports a placeholder so the gate passes and the Anthropic key does the real authentication.
+
+Building from source on a host without GitHub release access needs three variables: `PROTOC=/usr/bin/protoc` (apt `protobuf-compiler`), and `GROK_TOOLS_BUNDLE_RG_PATH` plus `GROK_SHELL_BUNDLE_RG_PATH` pointing at a local `rg`. The deck's `rebuild-release` action carries the first; add the other two if your host cannot reach GitHub releases.
+
 ## Add a system
 
 Append to `systems` in `deck.json`:
