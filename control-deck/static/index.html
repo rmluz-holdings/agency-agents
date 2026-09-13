@@ -2,7 +2,14 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0f14">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Deck">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="icon" href="/static/icon.svg" type="image/svg+xml">
 <title>Control Deck</title>
 <style>
   :root {
@@ -54,7 +61,17 @@
   .procs { font-family: var(--mono); font-size: 11.5px; color: #cbd5e1; }
   .procs div { display: grid; grid-template-columns: 60px 56px 56px 1fr; gap: 6px; }
   .procs .h { color: var(--muted); }
-  @media (max-width: 700px) { body { padding: 12px; } .grid { grid-template-columns: 1fr; } }
+  @media (max-width: 700px) {
+    body { padding: 12px; padding-top: calc(12px + env(safe-area-inset-top)); padding-bottom: calc(12px + env(safe-area-inset-bottom)); }
+    .grid { grid-template-columns: 1fr; }
+    .host { grid-template-columns: 1fr 1fr; }
+    .metric[style] { grid-column: span 2 !important; }
+    .cmd { flex: 1 1 100%; }
+    .cmd button, .actions button, .jobs button { padding: 10px 13px; font-size: 13px; }
+    table { font-size: 12px; } th:nth-child(5), td:nth-child(5) { display: none; }
+  }
+  #installHint { display: none; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; margin-bottom: 12px; font-size: 12.5px; color: var(--muted); }
+  #installHint b { color: var(--text); }
 </style>
 </head>
 <body>
@@ -68,6 +85,7 @@
   </form>
 </header>
 
+<div id="installHint"><b>Install as an app:</b> tap Share, then <b>Add to Home Screen</b>. The deck then opens full-screen with its own icon.</div>
 <section class="host" id="host"></section>
 <section class="grid" id="grid"></section>
 
@@ -91,6 +109,8 @@ let CONFIG = null, STATUS = {}, drawerRefresh = null;
 const fmtBytes = (n) => { const u = ['B','KB','MB','GB','TB']; let i = 0; while (n >= 1024 && i < u.length-1) { n /= 1024; i++; } return n.toFixed(i ? 1 : 0) + ' ' + u[i]; };
 const fmtDur = (s) => { const d = Math.floor(s/86400), h = Math.floor(s%86400/3600), m = Math.floor(s%3600/60); return (d ? d+'d ' : '') + h+'h '+m+'m'; };
 const token = () => { try { return localStorage.getItem('deckToken') || ''; } catch (e) { return ''; } };
+// The iOS launcher hands the token over in the URL fragment; store it and scrub the address bar.
+(() => { const m = location.hash.match(/token=([^&]+)/); if (m) { try { localStorage.setItem('deckToken', decodeURIComponent(m[1])); } catch (e) {} history.replaceState(null, '', location.pathname); } })();
 function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2600); }
 async function api(path, opts = {}) {
   const headers = Object.assign({ 'Content-Type': 'application/json' }, opts.headers || {});
@@ -172,6 +192,14 @@ async function openLog(url, title) {
   await load(); clearInterval(drawerRefresh); drawerRefresh = setInterval(load, 3000);
 }
 function closeDrawer() { $('#drawer').classList.remove('open'); clearInterval(drawerRefresh); }
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
+  navigator.serviceWorker.register('/sw.js').catch(() => {});
+}
+(() => {
+  const ua = navigator.userAgent; const isIos = /iPhone|iPad|iPod/.test(ua);
+  const standalone = window.navigator.standalone === true || matchMedia('(display-mode: standalone)').matches;
+  if (isIos && !standalone) $('#installHint').style.display = 'block';
+})();
 (async () => {
   await loadConfig(); await Promise.all([refreshStatus(), refreshHost(), refreshJobs()]);
   const every = (CONFIG.refresh_seconds || 5) * 1000;

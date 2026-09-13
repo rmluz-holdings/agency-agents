@@ -1,0 +1,13 @@
+{
+  "appId": "dev.controldeck.app",
+  "appName": "Control Deck",
+  "webDir": "www",
+  "ios": {
+    "contentInset": "always",
+    "backgroundColor": "#0b0f14",
+    "allowsLinkPreview": false
+  },
+  "server": {
+    "allowNavigation": ["*"]
+  }
+}

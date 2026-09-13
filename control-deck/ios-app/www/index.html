@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Control Deck</title>
+<style>
+  body { margin: 0; background: #0b0f14; color: #e5e7eb; font: 16px/1.5 -apple-system, system-ui, sans-serif; padding: calc(24px + env(safe-area-inset-top)) 20px 24px; }
+  h1 { font-size: 22px; margin: 0 0 4px; } p { color: #8b95a5; margin: 0 0 18px; font-size: 14px; }
+  label { display: block; font-size: 12px; color: #8b95a5; text-transform: uppercase; letter-spacing: .06em; margin: 14px 0 6px; }
+  input { width: 100%; box-sizing: border-box; background: #121821; border: 1px solid #1f2937; color: #e5e7eb; border-radius: 10px; padding: 12px 14px; font-size: 16px; font-family: ui-monospace, Menlo, monospace; }
+  button { width: 100%; margin-top: 20px; background: #1d4ed8; color: white; border: 0; border-radius: 10px; padding: 14px; font-size: 16px; font-weight: 600; }
+  .err { color: #ef4444; font-size: 13px; margin-top: 10px; min-height: 18px; }
+  .hint { font-size: 12.5px; color: #8b95a5; margin-top: 18px; }
+</style>
+</head>
+<body>
+<h1>Control Deck</h1>
+<p>Point the app at the deck running on your machine.</p>
+<label for="url">Deck URL</label>
+<input id="url" inputmode="url" autocapitalize="none" autocorrect="off" placeholder="https://my-mac.tailnet-name.ts.net:8900">
+<label for="token">Action token</label>
+<input id="token" type="password" autocapitalize="none" autocorrect="off" placeholder="printed by deck.py on start">
+<button id="go">Open deck</button>
+<div class="err" id="err"></div>
+<div class="hint">The URL must be reachable from this phone. On the same Wi‑Fi use http://&lt;machine-ip&gt;:8900 with the deck started as <code>--bind 0.0.0.0</code>; from anywhere, use Tailscale and the deck's HTTPS address. The token is stored only on this device.</div>
+<script>
+const $ = (s) => document.querySelector(s);
+const saved = { url: localStorage.getItem('deckUrl') || '', token: localStorage.getItem('deckToken') || '' };
+$('#url').value = saved.url; $('#token').value = saved.token;
+async function open(auto) {
+  const url = $('#url').value.trim().replace(/\/+$/, ''); const token = $('#token').value.trim();
+  if (!url) { $('#err').textContent = auto ? '' : 'Enter the deck URL.'; return; }
+  $('#err').textContent = 'Connecting…';
+  try {
+    const r = await fetch(url + '/api/config', { cache: 'no-store' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    localStorage.setItem('deckUrl', url); localStorage.setItem('deckToken', token);
+    // Hand the token to the deck page through the URL fragment; the deck stores it in its own localStorage.
+    location.href = url + '/#token=' + encodeURIComponent(token);
+  } catch (e) {
+    $('#err').textContent = 'Cannot reach ' + url + ' (' + e.message + ').';
+  }
+}
+$('#go').onclick = () => open(false);
+if (saved.url) open(true);
+</script>
+</body>
+</html>

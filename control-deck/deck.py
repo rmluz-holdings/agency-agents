@@ -36,6 +36,9 @@ HERE = Path(__file__).resolve().parent
 LOG_DIR = HERE / "logs"
 TOKEN_FILE = Path.home() / ".control-deck" / "token"
 MAX_TAIL_BYTES = 64_000
+STATIC_TYPES = {".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8",
+                ".webmanifest": "application/manifest+json", ".png": "image/png", ".svg": "image/svg+xml",
+                ".css": "text/css; charset=utf-8"}
 
 
 # --------------------------------------------------------------------------- registry
@@ -395,6 +398,21 @@ class DeckHandler(BaseHTTPRequestHandler):
             super().log_message(fmt, *args)
 
     # helpers
+    def _file(self, target: Path, content_type: str) -> None:
+        try:
+            body = target.read_bytes()
+        except OSError:
+            self._error("not found", 404)
+            return
+        self.send_response(200)
+        self.send_header("Content-Type", content_type)
+        self.send_header("Content-Length", str(len(body)))
+        if target.suffix == ".js":
+            self.send_header("Service-Worker-Allowed", "/")
+        self.send_header("Cache-Control", "no-cache")
+        self.end_headers()
+        self.wfile.write(body)
+
     def _json(self, payload: Any, code: int = 200) -> None:
         body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
         self.send_response(code)
@@ -438,13 +456,17 @@ class DeckHandler(BaseHTTPRequestHandler):
         path = url.path
         query = parse_qs(url.query)
         if path in ("/", "/index.html"):
-            page = HERE / "static" / "index.html"
-            body = page.read_bytes()
-            self.send_response(200)
-            self.send_header("Content-Type", "text/html; charset=utf-8")
-            self.send_header("Content-Length", str(len(body)))
-            self.end_headers()
-            self.wfile.write(body)
+            self._file(HERE / "static" / "index.html", "text/html; charset=utf-8")
+            return
+        if path in ("/sw.js", "/manifest.webmanifest", "/apple-touch-icon.png"):
+            self._file(HERE / "static" / path.lstrip("/"), STATIC_TYPES[Path(path).suffix])
+            return
+        if path.startswith("/static/"):
+            target = (HERE / "static" / path[len("/static/"):]).resolve()
+            if target.parent != (HERE / "static").resolve() or not target.is_file():
+                self._error("not found", 404)
+                return
+            self._file(target, STATIC_TYPES.get(target.suffix, "application/octet-stream"))
             return
         if path == "/api/config":
             reg = self.server.registry
@@ -557,6 +579,8 @@ def main() -> int:
     parser.add_argument("--bind", default=None, help="bind address (default from config, else 127.0.0.1)")
     parser.add_argument("--port", type=int, default=None, help="port (default from config, else 8900)")
     parser.add_argument("--print-token", action="store_true", help="print the action token and exit")
+    parser.add_argument("--tls-cert", help="PEM certificate; serve HTTPS (needed for a home-screen app on iOS)")
+    parser.add_argument("--tls-key", help="PEM private key for --tls-cert")
     args = parser.parse_args()
 
     registry = load_registry(Path(args.config))
@@ -570,7 +594,17 @@ def main() -> int:
         print(f"[deck] WARNING: binding to {bind}; actions run shell commands on this host. Keep the token secret.",
               file=sys.stderr)
     server = DeckServer((bind, port), DeckHandler, registry, token)
-    print(f"[deck] {registry.get('title', 'Control Deck')} on http://{bind}:{port}")
+    scheme = "http"
+    if args.tls_cert or args.tls_key:
+        if not (args.tls_cert and args.tls_key):
+            print("[deck] --tls-cert and --tls-key must be given together", file=sys.stderr)
+            return 2
+        import ssl
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        context.load_cert_chain(args.tls_cert, args.tls_key)
+        server.socket = context.wrap_socket(server.socket, server_side=True)
+        scheme = "https"
+    print(f"[deck] {registry.get('title', 'Control Deck')} on {scheme}://{bind}:{port}")
     print(f"[deck] {len(server.systems)} systems registered from {args.config}")
     print(f"[deck] action token: {token}  (also in {TOKEN_FILE})")
     try:

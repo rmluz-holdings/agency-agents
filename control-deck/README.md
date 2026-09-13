@@ -41,6 +41,41 @@ The UI and the command bar can only run actions that exist in this file. There i
 - Starting Auto-Company's autonomous loop is deliberately not an action. The deck observes it, requests a stop after the current cycle, stops it outright, and opens its own dashboard. Start it from a terminal with `make start` in the Auto-Company directory so that choice stays human.
 - Paths in the shipped `deck.json` mirror the layout used during setup (`~/maxmiksa/auto-company`, `~/solvent-agent`, `~/platform-core`, `~/plumoai/plumoai`, `~/agency-agents/affiliate-marketing-hub`). Cards for missing directories show "(missing)". Set `DECK_ROOT=/path/to/checkouts` when the repos live somewhere other than your home directory, or edit the paths.
 
+## Use it from your iPhone
+
+The deck is a web app, so the phone needs to reach the machine that runs it. Pick a route:
+
+**Route 1: home-screen app from Safari (no Mac, no developer account).**
+
+1. Install [Tailscale](https://tailscale.com) on the machine and on the phone, or make sure both are on the same Wi‑Fi.
+2. Get a certificate and start the deck over HTTPS, bound to the machine's Tailscale address:
+   ```bash
+   tailscale cert my-mac.tailnet-name.ts.net
+   python3 deck.py --bind 0.0.0.0 --port 8900 \
+     --tls-cert my-mac.tailnet-name.ts.net.crt --tls-key my-mac.tailnet-name.ts.net.key
+   ```
+   Same Wi‑Fi only: `python3 deck.py --bind 0.0.0.0` and open `http://<machine-ip>:8900` instead (HTTP works for browsing; the offline shell needs HTTPS).
+3. On the phone open the address in Safari, tap **Share → Add to Home Screen**. The deck opens full-screen with its own icon. Tap **Token** once and paste the action token.
+
+**Route 2: native app on your phone via Xcode (Mac required, free Apple ID).**
+
+`ios-app/` is a Capacitor project with a generated Xcode project. It ships a launcher page that asks for the deck URL and token once, then opens the deck.
+
+```bash
+cd control-deck/ios-app
+npm install
+npx cap sync ios
+npx cap open ios          # opens ios/App/App.xcodeproj in Xcode
+```
+
+In Xcode: select the App target → Signing & Capabilities → pick your team (a free Apple ID works), plug in the phone, press Run. Free-account builds expire after 7 days; rebuild to renew. On the phone allow the developer profile under Settings → General → VPN & Device Management the first time.
+
+**Route 3: TestFlight (Mac plus a paid Apple Developer membership).**
+
+Same project. In Xcode choose Product → Archive, then Distribute App → TestFlight & App Store. In App Store Connect add yourself as an internal tester; the TestFlight app installs the build. Internal testing does not require App Review. The bundle id is `dev.controldeck.app`; change it in `ios-app/capacitor.config.json` and re-run `npx cap sync ios` if you want your own.
+
+What cannot be done for you from a Linux sandbox: signing and uploading. Both need Xcode on macOS and your Apple credentials.
+
 ## Add a system
 
 Append to `systems` in `deck.json`:
