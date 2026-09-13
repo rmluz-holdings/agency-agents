@@ -1,6 +1,6 @@
 # Control Deck
 
-One local dashboard that observes and commands every agent system on a machine: Auto-Company, CC GodMode, solvent-agent, platform-core, the PlumoAI Docker stack, the Affiliate Marketing Hub, and the Docker engine itself. Standard library Python, no dependencies, single file.
+One local dashboard that observes and commands every agent system on a machine: Auto-Company, CC GodMode, Grok Build, solvent-agent, platform-core, the PlumoAI Docker stack, the Affiliate Marketing Hub, and the Docker engine itself. Standard library Python, no dependencies, single file.
 
 ## Run
 

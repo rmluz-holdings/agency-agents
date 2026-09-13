@@ -81,6 +81,47 @@
       }
     },
     {
+      "id": "grok-build",
+      "name": "Grok Build (xAI)",
+      "kind": "agent-cli",
+      "cwd": "${DECK_ROOT}/xai-org/grok-build",
+      "status": {
+        "type": "command",
+        "cmd": "grok --version 2>&1 || ~/.local/bin/grok --version 2>&1 || echo 'grok not on PATH'",
+        "timeout": 10
+      },
+      "health": {
+        "type": "command",
+        "cmd": "command -v grok >/dev/null || test -x ~/.local/bin/grok",
+        "timeout": 5
+      },
+      "links": {
+        "docs": "https://docs.x.ai/build/overview"
+      },
+      "note": "Sign in from a terminal with `grok login --device-auth` (needs access to auth.x.ai) or export XAI_API_KEY.",
+      "actions": {
+        "version": {
+          "cmd": "grok --version",
+          "risk": "low"
+        },
+        "models": {
+          "cmd": "grok models",
+          "risk": "low",
+          "timeout": 60
+        },
+        "check-build": {
+          "cmd": "PROTOC=/usr/bin/protoc cargo check -p xai-grok-pager-bin",
+          "risk": "low",
+          "timeout": 1800
+        },
+        "rebuild-release": {
+          "cmd": "PROTOC=/usr/bin/protoc cargo build -p xai-grok-pager-bin --release && install -m 755 target/release/xai-grok-pager ~/.local/bin/grok",
+          "risk": "medium",
+          "timeout": 3600
+        }
+      }
+    },
+    {
       "id": "solvent-agent",
       "name": "solvent-agent",
       "kind": "service",
