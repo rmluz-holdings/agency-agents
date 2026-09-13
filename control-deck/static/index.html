@@ -3,51 +3,57 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0b0f14">
+<meta name="theme-color" content="#faf9f5">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Deck">
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="icon" href="/static/icon.svg" type="image/svg+xml">
 <title>Control Deck</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600&family=Lora:wght@400;500&display=swap">
 <style>
   :root {
-    --bg: #0b0f14; --panel: #121821; --panel-2: #0f141b; --line: #1f2937; --text: #e5e7eb; --muted: #8b95a5;
-    --up: #22c55e; --down: #ef4444; --unknown: #f59e0b; --accent: #60a5fa; --accent-2: #a78bfa;
+    /* Anthropic brand palette */
+    --bg: #faf9f5; --panel: #ffffff; --panel-2: #e8e6dc; --line: #d9d6cb; --text: #141413; --muted: #6f6d66;
+    --up: #788c5d; --down: #d97757; --unknown: #b0aea5; --accent: #6a9bcc; --accent-2: #d97757;
     --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --heading: "Poppins", Arial, Helvetica, sans-serif; --body: "Lora", Georgia, "Times New Roman", serif;
   }
   * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.45 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; padding: 16px; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 var(--body); padding: 16px; }
   header { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-  h1 { font-size: 18px; margin: 0; letter-spacing: .02em; }
+  h1 { font-family: var(--heading); font-weight: 600; font-size: 24px; margin: 0; letter-spacing: -.01em; }
   h1 span { color: var(--muted); font-weight: 400; font-size: 12px; margin-left: 8px; }
   .cmd { display: flex; gap: 8px; flex: 1 1 420px; max-width: 720px; }
   .cmd input { flex: 1; background: var(--panel); border: 1px solid var(--line); color: var(--text); padding: 9px 12px; border-radius: 8px; font-family: var(--mono); font-size: 13px; }
-  .cmd button, .actions button, .jobs button { background: var(--panel-2); border: 1px solid var(--line); color: var(--text); padding: 7px 11px; border-radius: 7px; cursor: pointer; font-size: 12px; }
+  .cmd button, .actions button, .jobs button { font-family: var(--heading); font-weight: 500; background: var(--panel-2); border: 1px solid var(--line); color: var(--text); padding: 7px 11px; border-radius: 7px; cursor: pointer; font-size: 12px; }
+  .cmd button[type=submit] { background: var(--accent-2); border-color: var(--accent-2); color: #faf9f5; }
   .cmd button:hover, .actions button:hover, .jobs button:hover { border-color: var(--accent); }
   .host { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 14px; }
   .metric { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
-  .metric .k { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; }
+  .metric .k { font-family: var(--heading); font-weight: 500; color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; }
   .metric .v { font-family: var(--mono); font-size: 16px; margin-top: 2px; font-variant-numeric: tabular-nums; }
-  .bar { height: 5px; background: #1f2937; border-radius: 3px; margin-top: 6px; overflow: hidden; }
+  .bar { height: 5px; background: var(--panel-2); border-radius: 3px; margin-top: 6px; overflow: hidden; }
   .bar i { display: block; height: 100%; background: var(--accent); }
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
   .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
   .card .top { display: flex; align-items: center; gap: 8px; }
-  .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--unknown); flex: none; box-shadow: 0 0 0 3px rgba(255,255,255,.04); }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--unknown); flex: none; box-shadow: 0 0 0 3px rgba(20,20,19,.06); }
   .dot.up { background: var(--up); } .dot.down { background: var(--down); }
-  .card .name { font-weight: 600; }
-  .card .kind { color: var(--muted); font-size: 11px; margin-left: auto; text-transform: uppercase; letter-spacing: .06em; }
+  .card .name { font-family: var(--heading); font-weight: 600; font-size: 15px; }
+  .card .kind { font-family: var(--heading); font-weight: 500; color: var(--muted); font-size: 11px; margin-left: auto; text-transform: uppercase; letter-spacing: .06em; }
   .card .cwd { color: var(--muted); font-family: var(--mono); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .card .cwd.missing { color: var(--down); }
-  .card pre { margin: 0; background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font-family: var(--mono); font-size: 11.5px; max-height: 150px; overflow: auto; white-space: pre-wrap; word-break: break-word; color: #cbd5e1; }
+  .card pre { margin: 0; background: #141413; border: 1px solid #141413; border-radius: 8px; padding: 8px 10px; font-family: var(--mono); font-size: 11.5px; max-height: 150px; overflow: auto; white-space: pre-wrap; word-break: break-word; color: #e8e6dc; }
   .actions { display: flex; flex-wrap: wrap; gap: 6px; }
-  .actions button.medium { border-color: #7c5a12; } .actions button.high { border-color: #7f1d1d; }
+  .actions button.medium { border-color: var(--accent-2); } .actions button.high { border-color: #141413; background: #141413; color: #faf9f5; }
   .links a { color: var(--accent); font-size: 12px; margin-right: 10px; text-decoration: none; }
   .note { color: var(--muted); font-size: 11.5px; }
   .jobs { margin-top: 16px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
-  .jobs h2 { font-size: 13px; margin: 0 0 8px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+  .jobs h2 { font-family: var(--heading); font-size: 13px; font-weight: 600; margin: 0 0 8px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
   table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
   th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
   th { color: var(--muted); font-weight: 500; }
@@ -55,10 +61,10 @@
   .st.running, .st.detached { color: var(--accent); } .st.finished { color: var(--up); } .st.failed, .st.timeout, .st.stopped { color: var(--down); }
   #drawer { position: fixed; right: 0; top: 0; bottom: 0; width: min(720px, 100vw); background: var(--panel); border-left: 1px solid var(--line); padding: 14px; overflow: auto; transform: translateX(105%); transition: transform .18s ease; z-index: 10; }
   #drawer.open { transform: none; }
-  #drawer pre { font-size: 11.5px; max-height: none; }
-  #toast { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); background: #1e293b; border: 1px solid var(--line); padding: 8px 14px; border-radius: 8px; font-size: 12.5px; opacity: 0; transition: opacity .2s; pointer-events: none; }
+  #drawer pre { font-size: 11.5px; max-height: none; background: #141413; color: #e8e6dc; }
+  #toast { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); background: #141413; color: #faf9f5; border: 1px solid #141413; padding: 8px 14px; border-radius: 8px; font-size: 12.5px; opacity: 0; transition: opacity .2s; pointer-events: none; }
   #toast.show { opacity: 1; }
-  .procs { font-family: var(--mono); font-size: 11.5px; color: #cbd5e1; }
+  .procs { font-family: var(--mono); font-size: 11.5px; color: var(--text); }
   .procs div { display: grid; grid-template-columns: 60px 56px 56px 1fr; gap: 6px; }
   .procs .h { color: var(--muted); }
   @media (max-width: 700px) {
