@@ -433,6 +433,7 @@ Accounting, financial analysis, tax strategy, and investment research specialist
 | 📊 [Financial Analyst](finance/finance-financial-analyst.md) | Financial modeling, forecasting, scenario analysis, decision support | Three-statement models, variance analysis, data-driven business intelligence |
 | 📈 [FP&A Analyst](finance/finance-fpa-analyst.md) | Budgeting, rolling forecasts, variance analysis, business reviews | Annual operating plans, monthly business reviews, strategic resource allocation |
 | 🔍 [Investment Researcher](finance/finance-investment-researcher.md) | Due diligence, portfolio analysis, asset valuation, equity research | Investment thesis development, risk assessment, market research |
+| 🏁 [Prop Firm Challenge Strategist](finance/finance-prop-firm-challenge-strategist.md) | Funded-trader evaluation risk management, loss-budget position sizing, pacing plans | Passing prop-firm challenges without breaching daily loss, drawdown, or consistency rules |
 | 🏛️ [Tax Strategist](finance/finance-tax-strategist.md) | Tax optimization, multi-jurisdictional compliance, transfer pricing | Entity structuring, ETR analysis, audit defense, strategic tax planning |
 
 ### 🎮 Game Development Division
